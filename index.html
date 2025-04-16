@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>沪深300 实时指数</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    #main {
+      width: 100%;
+      height: 500px;
+    }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>沪深300 实时指数图表</h2>
+  <div id="main"></div>
+
+  <script>
+    const chart = echarts.init(document.getElementById('main'));
+    let xData = [];
+    let yData = [];
+
+    const option = {
+      title: {
+        text: '沪深300 实时指数'
+      },
+      tooltip: {
+        trigger: 'axis'
+      },
+      xAxis: {
+        type: 'category',
+        data: xData
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [{
+        name: '沪深300',
+        type: 'line',
+        smooth: true,
+        data: yData
+      }]
+    };
+
+    chart.setOption(option);
+
+    async function fetchData() {
+      try {
+        const res = await fetch('https://qt.gtimg.cn/q=sh000300'); // 沪深300 腾讯代码
+        const text = await res.text();
+        const match = text.match(/v_sh000300="([^"]+)"/);
+        if (match) {
+          const parts = match[1].split('~');
+          const name = parts[1];
+          const price = parseFloat(parts[3]);
+          const time = new Date().toLocaleTimeString();
+
+          xData.push(time);
+          yData.push(price);
+
+          if (xData.length > 30) {
+            xData.shift();
+            yData.shift();
+          }
+
+          chart.setOption({
+            xAxis: {
+              data: xData
+            },
+            series: [{
+              data: yData
+            }]
+          });
+        }
+      } catch (e) {
+        console.error('获取数据失败：', e);
+      }
+    }
+
+    // 每隔10秒获取一次数据
+    fetchData();
+    setInterval(fetchData, 10000);
+  </script>
+</body>
+</html>
